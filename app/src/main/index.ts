@@ -1,3 +1,4 @@
+import { trustSystemCertificates } from './systemCerts'
 import { createSavedTranscriptions } from './savedTranscription'
 import { transcriptionBusy } from '../shared/transcription'
 import { hookAudioUploads } from './audioUploadIpc'
@@ -57,7 +58,7 @@ import { isId, text, rewriteNote } from './ipcArgs'
 import { hookMics } from './mics'
 import { activeCapture, audioHelperPath, hookCapture, joinParts, onCaptureStart, onRecordingEvent, prepareAppend, recordingFinished, recordingPaused, recordingSettled, rejoinInterrupted, setRecordingPaused, settleRecording, tell, type WarnCode } from './capture'
 import { createWidget } from './widget'
-import { hookTranscription, transcribeRecorded, onWhisperGpuOff, meetingLanguage, settleTranscription, speechLocaleFor, spokenChanged, transcriptionBacklogMs, stopTranscriptionServer, releaseIdleSpeech, transcriptFinished, transcriptPartials } from './asr'
+import { liveSilentMs, hookTranscription, transcribeRecorded, onWhisperGpuOff, meetingLanguage, settleTranscription, speechLocaleFor, spokenChanged, transcriptionBacklogMs, stopTranscriptionServer, releaseIdleSpeech, transcriptFinished, transcriptPartials } from './asr'
 import { hookCallNames, type Watch } from './callNames'
 import { helperWatch, killAllWatches } from './callNames/watch'
 import { macFullName } from './user'
@@ -94,6 +95,8 @@ app.setName('Yogurt')
 // Windows shows notifications only for an app with this id (the installer's shortcut carries the same one, electron-builder appId)
 if (process.platform === 'win32') app.setAppUserModelId('so.yogurt.app')
 app.setPath('userData', userDataDir())
+// before anything goes online: a company's own HTTPS certificate, installed in the system, is trusted too (#115)
+const systemCerts = trustSystemCertificates()
 mkdirSync(userDataDir(), { recursive: true })
 logToFile(join(userDataDir(), 'logs', 'main.log'))
 hookRendererErrors()
@@ -256,8 +259,8 @@ let relaunched = 0
 /** fake mode: how many times Yogurt would have restarted to install a new version */
 let updateRestarts = 0
 
-async function readCalendar(from: number, to: number, keep?: (event: CalEvent) => boolean): Promise<CalEvent[]> {
-  const events = await upcoming(from, to, keep)
+async function readCalendar(from: number, to: number, keep?: Parameters<typeof upcoming>[2], unavailable?: string[]): Promise<CalEvent[]> {
+  const events = await upcoming(from, to, keep, unavailable)
   refreshEventSnapshots(events)
   return events
 }
@@ -270,10 +273,10 @@ async function comingUp(): Promise<CalEvent[]> {
 }
 
 /** The events on the day of this time, earliest first */
-async function eventsOn(at: number): Promise<CalEvent[]> {
+async function eventsOn(at: number, purpose?: 'link-event', unavailable?: string[]): Promise<CalEvent[]> {
   const from = new Date(at); from.setHours(0, 0, 0, 0)
   const to = new Date(from); to.setDate(to.getDate() + 1)
-  return (await readCalendar(from.getTime(), to.getTime(), event => eventIds(event).some(id => !!storeRef?.meetingForEvent(id)))).sort((a, b) => a.start - b.start)
+  return (await readCalendar(from.getTime(), to.getTime(), purpose ?? (event => eventIds(event).some(id => !!storeRef?.meetingForEvent(id))), unavailable)).sort((a, b) => a.start - b.start)
 }
 
 /** the Mac's full name: who "You" is unless Settings says otherwise (fake mode: a fixed one) */
@@ -295,11 +298,13 @@ function startDetection() {
   const signals = createSignals({ helper: runHelper, events: readCalendar })
   refreshCalendarConsumers = () => signals.invalidateCalendar()
   const now = isFake() ? fakeNow : Date.now
+  let fakeSilence: number | undefined
   const watcher: Watcher = new Watcher({
     read: (at) => signals.read(at), now, active: activeMeeting, bindApp: bindMeetingApp,
     offer: (p) => prompts.offer(p), askStop: (m) => prompts.askStop(m), hide: () => prompts.hide(),
     // the call ended: the same stop as the widget's Stop button, then say so
     autoStop: (m) => { widget.callEnded(m.id); stopMeeting(m.id); prompts.stopped(m) },
+    silentMs: () => { if (isFake() && fakeSilence !== undefined) return fakeSilence; const m = activeMeeting(); return m ? liveSilentMs(m.id) : 0 },
     autoStopOn: () => stopsWhenCallEnds(loadSettings(join(userDataDir(), 'settings.json'))),
     // no "Take notes?" while onboarding is still on screen
     ready: () => !onboardingShowing(),
@@ -313,6 +318,7 @@ function startDetection() {
     stop: (id) => { stopMeeting(id) },
     dismissed: (key) => watcher.dismiss(key),
     keepGoing: () => watcher.keepGoing(),
+    dismissStop: () => watcher.dismissStop(),
     open: (id) => goTo(`/note/${id}`),
     os: process.platform,
   })
@@ -423,13 +429,14 @@ function startDetection() {
   refreshCalendarConsumers = () => { signals.invalidateCalendar(); void tray.refreshCalendar() }
   setTrayVisible = tray.setVisible
   trayShown = tray.shown
-  // cheap, and only while Yogurt runs; more often while recording, so a call that ended stops within a few seconds
+  // cheap, and only while Yogurt runs; more often while recording, so the end of a quiet call is noticed promptly
   let timer: NodeJS.Timeout | undefined
   const watchLoop = () => { timer = setTimeout(() => { void watcher.tick().catch((e) => console.error('detect failed', e)).finally(watchLoop) }, watchEveryMs(!!activeMeeting())) }
   watchLoop()
   app.on('will-quit', () => clearTimeout(timer))
   if (isFake()) {
     installFakeHooks({
+      silence: async (ms) => { fakeSilence = ms ?? undefined; await watcher.tick() },
       signals: async (r) => { signals.override(r); await watcher.tick() },
       advance: () => watcher.tick(),
       widget: () => widget.snapshot(),
@@ -465,6 +472,7 @@ function startDetection() {
 }
 
 app.whenReady().then(() => {
+  console.info('APP', `trusting ${systemCerts} certificates from the system on top of the built-in ones`)
   // Local Electron launches need the same Dock icon as the packaged application.
   if (!app.isPackaged && process.platform === 'darwin') app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
   const settings = loadSettings(join(userDataDir(), 'settings.json'))
@@ -938,7 +946,7 @@ app.whenReady().then(() => {
     if (typeof eventId !== 'string') return
     const at = day ?? m.eventStartedAt ?? m.startedAt
     if (typeof at !== 'number' || !Number.isFinite(at) || !Number.isFinite(new Date(at).getTime())) throw new Error('Invalid calendar day')
-    const event = (await eventsOn(at)).find((e) => matchesEvent(e, eventId))
+    const event = (await eventsOn(at, 'link-event')).find((e) => matchesEvent(e, eventId))
     if (!event) throw new Error('Calendar event unavailable')
     if (linkEvent(m.id, event)) notes.applyPeople(m.id)
   })
@@ -1016,14 +1024,15 @@ app.whenReady().then(() => {
     win?.webContents.send('calendar:changed')
     return true
   })
-  ipcMain.handle('calendar:day', async (_e, at: unknown) => {
+  ipcMain.handle('calendar:day', async (_e, at: unknown, purpose?: unknown) => {
     if (typeof at !== 'number' || !Number.isFinite(at) || !Number.isFinite(new Date(at).getTime())) return { status: 'error', events: [] }
-    const events = (await eventsOn(at)).map((event) => {
+    const unavailable: string[] = []
+    const events = (await eventsOn(at, purpose === 'link-event' ? 'link-event' : undefined, unavailable)).map((event) => {
       const meeting = eventIds(event).map((id) => store.meetingForEvent(id)).find(Boolean)
       const note = meeting && withStopState(meeting)
       return { ...event, attendees: resolvePeople(store.db, event.attendees), ...(note ? { note: { id: note.id, state: note.state, ...(note.source ? { source: note.source } : {}) } } : {}) }
     })
-    return { status: calendarStatus(), events }
+    return { status: calendarStatus(), events, unavailable }
   })
   ipcMain.handle('calendar:coming-up', async () => {
     const events = (await comingUp()).map(event => ({ ...event, attendees: resolvePeople(store.db, event.attendees) }))
@@ -1045,7 +1054,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('calendar:connect', async () => {
     // a calendar link is pasted in Settings' calendars: the same form as the first run's
-    if (calendarLinks && caps.calendarLink) { goTo('/settings'); return refreshCalendarStatus() }
+    if (calendarLinks && caps.calendarLink) { goTo('/settings/calendar'); return refreshCalendarStatus() }
     const was = await refreshCalendarStatus()
     if (was === 'notDetermined') return requestCalendarAccess()
     if (was === 'denied') {

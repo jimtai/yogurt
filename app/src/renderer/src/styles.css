@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant focus-visible (&:is([data-focus-ring],:focus-visible:where(:not([data-quiet-focus]))));
 
 /* Brand type is bundled. Utility text follows macOS for a crisp native rhythm. */
 @font-face {
@@ -224,7 +225,7 @@ html.widget { --pill:#232326;--pill-ink:#F7F7FA;--accent:#B780FF;--pill-accent:v
 .summary-regenerate-input { width:100%;height:36px;border:1px solid var(--control-border);border-radius:6px;background:var(--control);padding:0 10px;font-size:12px;color:var(--ink); }
 .main-window .summary-regenerate-input:focus-visible { outline:2px solid var(--muted);outline-offset:2px; }
 .summary-regenerate-input::placeholder { color:var(--muted); }
-.summary-regenerate-warning { margin-top:10px;font-size:12px;line-height:20px;color:var(--muted);white-space:nowrap; }
+.summary-regenerate-warning { margin-top:10px;font-size:12px;line-height:20px;color:var(--muted);overflow-wrap:anywhere; }
 .summary-regenerate-actions { display:flex;justify-content:flex-end;margin-top:12px; }
 .note-chip, .note-record-action { height:32px; }
 .note-chip { transition: background-color var(--dur-micro) ease, color var(--dur-micro) ease, opacity var(--dur-micro) var(--ease-out), box-shadow var(--dur-micro) ease; }
@@ -232,16 +233,16 @@ html.widget { --pill:#232326;--pill-ink:#F7F7FA;--accent:#B780FF;--pill-accent:v
 .note-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .person-remove { opacity: 0; }
 .person-row:hover { background: color-mix(in srgb, var(--line) 45%, transparent); }
-/* keyboard focus shows a row's actions; the focus the card takes when it opens doesn't, so only the hovered row shows them */
-.person-row:hover .person-remove, .person-row:has(:focus-visible) .person-remove { opacity: 1; }
+/* The card may focus a name on open. Always reveal an action that receives focus itself. */
+.person-row:hover .person-remove, .person-row:has([data-focus-ring]) .person-remove, .person-remove:focus { opacity: 1; }
 .menu-entry { transform-origin:var(--transform-origin, top right); }
 /* Menus share the floating surface in each theme. */
 .menu-entry[role="menu"] { color:var(--ink);border-color:var(--line);border-radius:9px;padding:5px;background:var(--float);box-shadow:var(--shadow); }
 .menu-entry[role="menu"] :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]) { min-height:32px;border-radius:5px;padding:6px 9px;font-size:12px;line-height:20px; }
 .menu-entry[role="menu"] :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]):hover:not(:disabled) { background:var(--control-hover); }
-.menu-entry[role="menu"] :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]):focus-visible { outline:none;background:var(--selected); }
+.menu-entry[role="menu"] :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"])[data-focus-ring] { outline:none;background:var(--selected); }
 .menu-entry[role="menu"] :is([data-testid="note-delete"], .folder-picker-new) { margin-top: 4px; border-top: 1px solid var(--line); border-radius: 0 0 5px 5px; padding-top: 10px; }
-.people-add-field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.people-add-field:has([data-focus-ring]) { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .people-add-field input:focus-visible { outline: none; }
 .menu-entry[data-anchor="start"] { transform-origin: top left; }
 [dir="rtl"] .menu-entry[data-anchor="start"] { transform-origin: top right; }
@@ -270,8 +271,8 @@ html.widget { --pill:#232326;--pill-ink:#F7F7FA;--accent:#B780FF;--pill-accent:v
 .note-prose > * + * { margin-top: 0.4em; }
 .note-prose h1, .note-prose h2, .note-prose h3 { position: relative; font-weight: 600; line-height: 1.4; }
 .note-prose h1 { font-size: 19px; margin-top: 1.5em; }
-.note-prose h2 { font-size: 15px; margin-top: 1.7em; letter-spacing: -.015em; }
-.note-prose h3 { font-size: 15.5px; margin-top: 1.3em; }
+.note-prose h2 { font-size: 16px; margin-top: 1.7em; letter-spacing: -.015em; }
+.note-prose h3 { font-size: 15px; margin-top: 1.3em; }
 .note-prose > :first-child { margin-top: 0; }
 .note-prose h1 + ul, .note-prose h2 + ul, .note-prose h3 + ul, .note-prose h1 + ol, .note-prose h2 + ol, .note-prose h3 + ol { margin-top: 0.35em; }
 .note-prose ul, .note-prose ol { padding-inline-start: 1.15em; }
@@ -375,7 +376,8 @@ html.widget { --pill:#232326;--pill-ink:#F7F7FA;--accent:#B780FF;--pill-accent:v
 /* words not final yet: lighter, each new one fading in, three soft dots after them; once final they deepen in place */
 .live-words { color: var(--muted); }
 .live-word { animation: motion-fade var(--dur-base) var(--ease-out) backwards; }
-.live-dots { display: inline-flex; align-items: center; gap: 3px; margin-inline-start: 7px; height: 1em; vertical-align: -0.1em; }
+/* zero height, so the dots never make their line taller than a line without them */
+.live-dots { display: inline-flex; align-items: center; gap: 3px; margin-inline-start: 7px; height: 0; vertical-align: 0.4em; }
 .live-dots i { width: 4px; height: 4px; border-radius: 999px; background: var(--muted); animation: live-dot 1.2s ease-in-out infinite; }
 .live-dots i:nth-child(2) { animation-delay: 0.2s; }
 .live-dots i:nth-child(3) { animation-delay: 0.4s; }
@@ -407,7 +409,7 @@ html.widget { --pill:#232326;--pill-ink:#F7F7FA;--accent:#B780FF;--pill-accent:v
 [dir="rtl"] .scrubber::-webkit-slider-runnable-track { background: linear-gradient(to left, var(--accent) var(--fill), var(--line) var(--fill)); }
 .scrubber::-webkit-slider-thumb { -webkit-appearance: none; width: 11px; height: 11px; margin-top: -4px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 0 3px var(--float); }
 .scrubber:focus-visible { outline: none; }
-.scrubber:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--float), 0 0 0 5px var(--accent); }
+.scrubber[data-focus-ring]::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--float), 0 0 0 5px var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .line-in, .name-in { animation:motion-fade var(--dur-micro) var(--ease-out); }
 }
@@ -482,8 +484,13 @@ html.widget { --pill:#232326;--pill-ink:#F7F7FA;--accent:#B780FF;--pill-accent:v
 .modal-copy h2 { font-size:14px;line-height:20px;font-weight:600;letter-spacing:-.15px;overflow-wrap:anywhere; }
 .modal-copy p { margin-top:8px;color:var(--muted);font-size:12px;line-height:18px; }
 .inline-error { display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--float);color:var(--written);font-size:13px;line-height:20px;text-align:start;text-overflow:ellipsis; }
-.inline-error>svg { flex:none;align-self:flex-start;margin-block-start:2px;color:var(--danger); }
-.inline-error>span { flex:1;min-width:0;overflow-wrap:anywhere; }
+.inline-error>span { flex:1 1 auto;min-width:0;overflow-wrap:anywhere; }
+.inline-error-actions { display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;max-width:100%;margin-inline-start:auto; }
+.inline-error>.workspace-button { margin-inline-start:auto; }
+.player-read-error a.text-action { min-height:24px;text-decoration:underline;text-underline-offset:3px; }
+.inline-error.player-read-error { flex-wrap:wrap;gap:8px;padding:4px 10px;border:0;background:transparent;font-size:12px;line-height:18px; }
+.transcript-player-dock:has(.player-read-error) { inset-inline:max(16px, calc((100% - 520px)/2)); }
+.player-read-error .inline-error-actions>.workspace-icon { margin-inline-start:0; }
 .inline-error-in-dialog { margin:0 19px 16px;padding:0;border:0;border-radius:0;background:transparent;font-size:12px;line-height:18px; }
 .modal-actions { display:flex;flex-direction:column;gap:7px;padding:0 20px 20px; }
 .modal-button { display:inline-flex;align-items:center;justify-content:center;min-height:33px;width:100%;padding:6px 12px;border:1px solid transparent;border-radius:7px;background:var(--control);font-size:12px;font-weight:500;transition:background-color var(--dur-micro) ease; }
@@ -708,15 +715,12 @@ input::selection, textarea::selection, .note-prose ::selection { background: var
 .transcript-inline [data-testid="transcript"] { padding-inline:var(--transcript-inset);padding-top:22px; }
 [data-testid="transcript-panel"] [data-testid="transcript"] { padding-bottom:max(16px,var(--playback-inset));scroll-padding-bottom:var(--playback-inset); }
 .transcript-player-dock { position:absolute;inset-inline:max(16px, calc((100% - 412px)/2));bottom:12px;z-index:1;clip-path:inset(-16px -16px -12px); }
-.transcript-player { padding:5px 8px;border:1px solid var(--line);border-radius:22px;background:color-mix(in srgb,var(--float) 96%,transparent);backdrop-filter:blur(12px);box-shadow:0 2px 8px #0000000D;opacity:1;transform:translateY(0);transition:opacity var(--dur-micro) var(--ease-out),transform var(--dur-player-return) var(--ease-player-return); }
+.transcript-player { padding:5px 8px;border:1px solid var(--line);border-radius:22px;background:var(--float);box-shadow:0 2px 8px #0000000D;opacity:1;transform:translateY(0);transition:opacity var(--dur-micro) var(--ease-out),transform var(--dur-player-return) var(--ease-player-return); }
 .transcript-player-dock[data-hidden=true] .transcript-player { opacity:0;transform:translateY(calc(100% + 12px));pointer-events:none;transition:transform var(--dur-player-duck) var(--ease-player-duck),opacity calc(var(--dur-player-duck)/4) linear calc(var(--dur-player-duck)*.75); }
 @media (prefers-reduced-motion: reduce) {
   .transcript-player,.transcript-player-dock[data-hidden=true] .transcript-player { transform:none;transition:opacity var(--dur-micro) var(--ease-out); }
 }
 [data-testid="transcript-panel"] [data-testid="transcript-follow"] { bottom:calc(var(--playback-inset) + 8px); }
-@media (prefers-reduced-transparency:reduce),(prefers-contrast:more) {
-  .transcript-player { background:var(--float);backdrop-filter:none; }
-}
 
 html:not(.widget) .bg-accent { background-color:var(--primary); }
 html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { outline-color:var(--focus); }
@@ -731,7 +735,7 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 .app-modal[data-testid=shortcuts-dialog] .modal-copy { flex:none;padding:22px 24px 18px; }
 .shortcuts-close { position:absolute;inset-inline-end:16px;top:18px; }
 .shortcuts-search { display:flex;align-items:center;gap:10px;margin:0 24px 12px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;color:var(--muted); }
-.shortcuts-search:focus-within { border-color:var(--accent); }
+.shortcuts-search:has([data-focus-ring]) { border-color:var(--accent); }
 .shortcuts-search input { width:100%;min-width:0;background:transparent;color:var(--ink);font-size:13px;outline:none; }
 .shortcuts-list { flex:1;min-height:0;overflow-y:auto;padding:0 24px 22px; }
 .shortcuts-list section+section { margin-top:20px; }
@@ -765,6 +769,11 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 :is(.line-who,.widget-preview-speaker)[data-folder-color] { color:var(--folder-ink); }
 
 /* Calendar linking lives in the date popover; attendee editing stays in People. */
+.note-date-anchor { min-width:0;max-width:min(100%, 17rem); }
+.note-date-chip { max-width:100%;white-space:nowrap; }
+.note-date-chip>svg { flex:none; }
+.note-date-chip-dot { width:6px;height:6px;border-radius:50%;flex:none; }
+.note-date-chip-name { min-width:0;overflow:hidden;text-overflow:ellipsis; }
 .note-date-card { --note-date-ms:var(--dur-base);--note-date-ease:var(--ease-out); }
 .note-date-swap { position:relative;overflow:hidden; }
 .note-date-retiring { position:absolute;inset:0 0 auto;pointer-events:none; }
@@ -796,8 +805,8 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 @media (prefers-reduced-motion:reduce) { .note-date-reveal { transition:none; } }
 
 .note-date-identity { min-width:0;flex:1; }
-.note-date-identity>strong,.note-date-time,.note-date-calendar { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.note-date-identity>strong { font-size:14px;font-weight:600;line-height:21px; }
+.note-date-time,.note-date-calendar { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.note-date-identity>strong { display:block;overflow-wrap:anywhere;font-size:14px;font-weight:600;line-height:21px; }
 .note-date-time { font-size:12px;line-height:18px;color:var(--written);margin-top:3px; }
 .note-date-calendar { min-height:16px;font-size:11px;line-height:16px;color:var(--muted);margin-top:3px; }
 .note-date-event-toggle>svg { flex:none;margin-top:4px;color:var(--muted);transition:transform var(--note-date-ms) var(--note-date-ease); }
@@ -812,7 +821,8 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 .note-date-link>svg { flex:none; }
 .note-date-link small { display:block;margin-top:3px;font-size:11px;overflow:hidden;text-overflow:ellipsis; }
 .note-date-events { max-height:240px;overflow-y:auto;overscroll-behavior:contain; }
-.note-date-events>p { padding:12px 8px;font-size:12px;color:var(--muted); }
+.note-date-events:has(>.note-date-event) { margin:-8px; }
+.note-date-events>p { font-size:12px;color:var(--muted); }
 .note-date-event { display:flex;align-items:center;gap:8px;width:100%;padding:8px;border-radius:6px;text-align:start; }
 .note-date-event>span { flex:1;min-width:0; }
 .note-date-event strong,.note-date-event small { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
@@ -917,8 +927,8 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 .summary-stop-square { width:10px;height:10px;border-radius:2px;background:currentColor;opacity:0; }
 .note-resume-action[data-processing=true] { cursor:pointer;box-shadow:0 1px 2px #0000000A; }
 .note-resume-action[data-processing=true]:hover { background:var(--control-hover); }
-.note-resume-action:is(:hover,:focus-visible) .summary-stop-icon>svg { opacity:0; }
-.note-resume-action:is(:hover,:focus-visible) .summary-stop-square { opacity:1; }
+.note-resume-action:is(:hover,:focus) .summary-stop-icon>svg { opacity:0; }
+.note-resume-action:is(:hover,:focus) .summary-stop-square { opacity:1; }
 .summary-stopped { display:flex;flex-direction:column;align-items:flex-start;gap:8px;color:var(--muted);font-size:13px; }
 @media (prefers-reduced-motion:reduce) { .summary-stop-icon>* { transition:none; } }
 
@@ -973,6 +983,8 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 .audio-upload-date-row { display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:6px;padding:0;min-width:0;height:34px;color:var(--muted);font-size:12px; }
 .audio-upload-date { display:flex;align-items:center;gap:8px;min-width:0;color:var(--ink);font-size:12px;padding:0 10px;flex:1;border-start-start-radius:5px;border-end-start-radius:5px; }
 .audio-upload-date span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.audio-upload-when { display:grid;grid-template-columns:minmax(0,1fr);gap:6px; }
+.upload-time-error {color:var(--danger);font-size:12px;line-height:18px; }
 .audio-upload-date-row small { font-size:11px;white-space:nowrap;padding-inline:9px; }
 .audio-upload-date-positioner { z-index:110; }
 .audio-upload-date-picker { position:relative;border:1px solid var(--line);border-radius:9px;background:var(--float);color:var(--ink);box-shadow:var(--shadow);width:var(--anchor-width);max-width:calc(100vw - 24px);max-height:var(--available-height);overflow:auto;padding:10px; }
@@ -984,8 +996,8 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 .audio-upload-month button:disabled { opacity:.25;cursor:default; }
 .audio-upload-month button[data-outside=true] { opacity:.45; }
 .audio-upload-month button:disabled:hover b { background:transparent; }
-.audio-upload-month button:focus-visible b { outline:2px solid var(--focus);outline-offset:1px; }
-.audio-upload-date-row .audio-upload-time { width:88px;min-width:0;height:32px;padding:0 8px;border:0;border-inline-start:1px solid var(--line);border-radius:0;background:transparent;flex:none;color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums; }
+.audio-upload-month button[data-focus-ring] b { outline:2px solid var(--focus);outline-offset:1px; }
+.audio-upload-date-row .audio-upload-time { width:112px;min-width:0;height:32px;padding:0 8px;border:0;border-inline-start:1px solid var(--line);border-radius:0;background:transparent;flex:none;color:var(--ink);font-size:12px;font-variant-numeric:tabular-nums; }
 .audio-upload-date:focus-visible,.audio-upload-time:focus-visible { outline:2px solid var(--focus);outline-offset:-2px; }
 .audio-upload-time:hover:not(:disabled) { background:var(--control-hover); }
 .audio-upload-submit { position:relative; }
@@ -994,3 +1006,40 @@ html:not(.widget) button:focus-visible, html:not(.widget) input:focus-visible { 
 .audio-upload-submit-icon { position:absolute;inset:0;display:flex;align-items:center;justify-content:center; }
 .audio-upload-date-picker .audio-upload-month button:focus-visible { outline:none; }
 .transcription-notice-slot:empty { display:none; }
+
+/* Floating surfaces keep their solid theme fills until the display permits transparency. */
+@supports (backdrop-filter:blur(1px)) and (background:color-mix(in srgb,white,transparent)) {
+  @media (prefers-reduced-transparency:no-preference) and (prefers-contrast:no-preference) and (forced-colors:none) {
+    :root.main-window {
+      --floating-blur:22px;
+      --floating-saturation:106.5%;
+      --floating-tint:91.5%;
+      --floating-edge-alpha:11%;
+      --floating-fill:color-mix(in srgb,var(--float) var(--floating-tint),transparent);
+      --floating-edge:color-mix(in srgb,var(--ink) var(--floating-edge-alpha),transparent);
+    }
+    @media (prefers-color-scheme:dark) {
+      :root.main-window { --floating-tint:95%; }
+    }
+    :root.main-window :is(
+      .search-panel,.menu-entry,.ask-picker,.app-modal,.editor-toolbar,.transcript-player,
+      .meeting-selection-bar,.app-toast,.finish-setup,.settings-jargon-suggest,.chat-morph-surface,
+      .citation-mass,[role=tooltip],aside[data-testid=transcript-panel]
+    ) {
+      background:var(--floating-fill);
+      border-color:var(--floating-edge);
+      backdrop-filter:blur(var(--floating-blur)) saturate(var(--floating-saturation));
+    }
+    :root.main-window .citation-edge { border-color:var(--floating-edge); }
+    :root.main-window .agenda-inspector-arrow {
+      background:var(--floating-fill);
+      border-color:var(--floating-edge);
+    }
+    /* A resting clip would prevent the player from sampling the transcript beneath it. */
+    :root.main-window .transcript-player-dock:not([data-hidden=true]) { clip-path:none; }
+  }
+}
+
+/* Native and library focus returns can follow Escape or a click inside a different surface. */
+[data-quiet-focus]:focus-visible { outline-style:none !important; }
+:where([data-focus-ring]:not(:focus-visible)) { outline:2px solid var(--focus);outline-offset:2px; }

@@ -1,4 +1,12 @@
 {
+  "About Yogurt": "About Yogurt",
+  "Like Yogurt? Sharing it or starring it on GitHub helps us keep building it.": "Like Yogurt? Sharing it or starring it on GitHub helps us keep building it.",
+  "Copy link": "Copy link",
+  "Share…": "Share…",
+  "View on GitHub": "View on GitHub",
+  "Yogurt couldn't open the share menu.": "Yogurt couldn't open the share menu.",
+  "Couldn't load your conversations.": "Couldn't load your conversations.",
+  "Couldn't load this conversation.": "Couldn't load this conversation.",
   "Open in transcript": "Open in transcript",
   "Open note": "Open note",
   "Other people": "Other people",
@@ -22,6 +30,8 @@
   "No matching meetings with {name}.": "No matching meetings with {name}.",
   "No matching meetings on {date}.": "No matching meetings on {date}.",
   "No matching meetings with {name} on {date}.": "No matching meetings with {name} on {date}.",
+  "Couldn't load this content.": "Couldn't load this content.",
+  "Previous results": "Previous results",
   "Meetings with {name}": "Meetings with {name}",
   "{count} min": {
     "one": "{count} min",
@@ -167,6 +177,7 @@
   "The selected microphone is unavailable, so recording is using your system microphone.": "The selected microphone is unavailable, so recording is using your system microphone.",
   "There is no transcript or typed note to summarize.": "There is no transcript or typed note to summarize.",
   "This changes the language of Yogurt's menus and buttons.": "This changes the language of Yogurt's menus and buttons.",
+  "Can't read {calendar}": "Can't read {calendar}",
   "Yogurt couldn't change the notes model.": "Yogurt couldn't change the notes model.",
   "Yogurt couldn't copy.": "Yogurt couldn't copy.",
   "Yogurt couldn't delete everything in the Trash.": "Yogurt couldn't delete everything in the Trash.",
@@ -239,10 +250,16 @@
   "Yogurt couldn't read this audio file.": "Yogurt couldn't read this audio file.",
   "Yogurt couldn't transcribe this file.": "Yogurt couldn't transcribe this file.",
   "Reading the file…": "Reading the file…",
+  "Enter a valid start time.": "Enter a valid start time.",
   "Start time": "Start time",
   "Transcription stopped.": "Transcription stopped.",
   "Continue transcription": "Continue transcription",
   "Transcribe again": "Transcribe again",
   "Stop transcription": "Stop transcription",
-  "Audio is unavailable.": "Audio is unavailable."
+  "Audio is unavailable.": "Audio is unavailable.",
+  "Copy the private iCal address from your calendar settings.": "Copy the private iCal address from your calendar settings.",
+  "Enter an https:// or webcal:// calendar address.": "Enter an https:// or webcal:// calendar address.",
+  "The address stays on this computer.": "The address stays on this computer.",
+  "Add a calendar by link": "Add a calendar by link",
+  "Calendars from the Mac's Calendar app appear above automatically.": "Calendars from the Mac's Calendar app appear above automatically."
 }

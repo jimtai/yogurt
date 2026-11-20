@@ -42,7 +42,7 @@ const heard = (page: Page, id: string) => expect.poll(async () => (await page.ev
 
 test('Stop ends recording when its metadata cannot save, and Retry saves without stopping twice', async () => {
   const { app, page, userData } = await launch()
-  const db = new DatabaseSync(join(userData, 'yogurt.db'))
+  const db = new DatabaseSync(join(userData, 'yogurt.db'), { timeout: 5000 })
   try {
     const id = await record(app, page)
     await page.getByTestId('note-mine').fill('Remember to send the launch plan.')
@@ -235,6 +235,15 @@ test('edits to the enhanced notes are saved; Write again asks first, then writes
     await page.getByTestId('note-write-again').click()
     await expect(page.getByTestId('note-regenerate')).toBeVisible()
     await expect(page.getByTestId('note-confirm')).toBeVisible()
+    const sizes = await page.locator('.note-prose').first().evaluate(prose => {
+      const sample = prose.cloneNode(false) as HTMLElement
+      sample.innerHTML = '<h2>Planning</h2><h3>Dates</h3>'
+      prose.parentElement!.append(sample)
+      const values = Array.from(sample.children, child => parseFloat(getComputedStyle(child).fontSize))
+      sample.remove()
+      return values
+    })
+    expect(sizes[0]).toBeGreaterThan(sizes[1])
     await expect(page.getByTestId('note-regenerate-input')).toHaveValue('')
     await page.getByTestId('note-regenerate-input').press('Enter')
     await expect(page.getByTestId('note-enhanced')).toHaveAttribute('data-status', 'writing', { timeout: 30_000 })

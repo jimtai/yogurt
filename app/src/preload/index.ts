@@ -134,6 +134,7 @@ const api: YogurtApi = {
     },
   },
   share: {
+    appLink: (x, y) => ipcRenderer.invoke('share:app-link', x, y),
     copy: (id, what, side) => ipcRenderer.invoke('share:copy', id, what, side),
     save: (id, side) => ipcRenderer.invoke('share:save', id, side),
   },
@@ -196,7 +197,7 @@ const api: YogurtApi = {
     onChange: (cb) => { ipcRenderer.on('calendar:changed', cb); return () => { ipcRenderer.off('calendar:changed', cb) } },
     comingUp: () => ipcRenderer.invoke('calendar:coming-up'),
     connect: () => ipcRenderer.invoke('calendar:connect'),
-    day: (at) => ipcRenderer.invoke('calendar:day', at),
+    day: (at, purpose) => ipcRenderer.invoke('calendar:day', at, purpose),
     links: () => ipcRenderer.invoke('calendar:links'),
     addLink: (url) => ipcRenderer.invoke('calendar:add-link', url),
     removeLink: (id) => ipcRenderer.invoke('calendar:remove-link', id),

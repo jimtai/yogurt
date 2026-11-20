@@ -105,6 +105,21 @@ describe('upcoming', () => {
     } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 
+  it.each([true, false])('includes enabled events for manual linking with the call-link filter set to %s', async hideEventsWithoutCallLink => {
+    const base = { start: '2026-11-03T18:00:00Z', end: '2026-11-03T19:00:00Z', calendarId: 'work' }
+    const rows = [
+      { ...base, id: 'call', url: 'https://meet.google.com/abc-defg-hij' },
+      { ...base, id: 'linked' }, { ...base, id: 'busy' },
+      { ...base, id: 'hidden-linked', calendarId: 'hidden' }, { ...base, id: 'hidden-call', calendarId: 'hidden', url: 'https://zoom.us/j/123456789' },
+    ]
+    setHelper(async args => args[0] === 'calendar-status' ? { status: 'granted' } : rows)
+    setCalendarSelection(() => ({ hideEventsWithoutCallLink, hiddenCalendarIds: ['hidden'] }))
+    const ids = (events: { id: string }[]) => events.map(e => e.id)
+    expect(ids(await upcoming(0, 1e12, 'link-event'))).toEqual(['call', 'linked', 'busy'])
+    expect(ids(await upcoming(0, 1e12, e => e.id.endsWith('linked')))).toEqual(hideEventsWithoutCallLink ? ['call', 'linked'] : ['call', 'linked', 'busy'])
+    expect(ids(await upcoming(0, 1e12))).toEqual(hideEventsWithoutCallLink ? ['call'] : ['call', 'linked', 'busy'])
+  })
+
   it('keeps noted events by alias only when requested and never restores excluded calendars', async () => {
     const row = { id: 'original', externalId: 'event', calendarId: 'work', start: '2026-11-03T18:00:00Z', end: '2026-11-03T19:00:00Z', url: 'https://example.com/document' }
     setHelper(async args => args[0] === 'calendar-status' ? { status: 'granted' } : [row, { ...row, id: 'alias' }])
@@ -215,6 +230,17 @@ describe('a Mac: calendar links sit alongside the built-in calendar (Settings â†
   const links = (linked: boolean) => ({ status: () => (linked ? 'granted' as const : 'notDetermined' as const), calendars: async () => (linked ? [{ id: 'l1', name: 'Club', source: 'example.com' }] : []), events: async () => (linked ? [linkEvent] : []) })
   const day = [Date.parse('2026-11-17T00:00:00Z'), Date.parse('2026-11-18T00:00:00Z')] as const
 
+  it.each(['calendar-status', 'events'])('keeps a healthy linked calendar when the Mac %s read fails', async failure => {
+    setHelper(async args => {
+      if (args[0] === failure) throw new Error('Calendar is unavailable')
+      return args[0] === 'calendar-status' ? { status: 'granted' } : []
+    })
+    setCalendarLinkSource(links(true), { alongside: true })
+    const unavailable: string[] = []
+    expect((await upcoming(...day, undefined, unavailable)).map(event => event.title)).toEqual(['Book club'])
+    expect(unavailable).toEqual(['Calendar'])
+    expect(calendarStatus()).toBe('granted')
+  })
   it('both: the Mac calendars and the links, their events together', async () => {
     setHelper(async (args) => args[0] === 'calendar-status' ? { status: 'granted' } : args[0] === 'calendars' ? [{ id: 'work', name: 'Work', source: 'iCloud' }] : [macRow])
     setCalendarLinkSource(links(true), { alongside: true })

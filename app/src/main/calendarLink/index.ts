@@ -1,3 +1,5 @@
+import { calendarAddress as normalize } from '../../shared/calendarLink'
+export { normalize }
 import { randomUUID } from 'node:crypto'
 import { loadSettings, updateSettings } from '../settings'
 import { icsFeed, icsName, type IcsFeed, type RawEvent } from './ics'
@@ -16,14 +18,6 @@ type Stored = { id: string; name: string; host: string; url: string }
 /** how long a fetched feed is used before asking for it again */
 export const REFRESH_MS = 5 * 60_000
 
-/** https (webcal is the same address), or plain http only on this computer (tests) */
-export function normalize(raw: string): URL | null {
-  let url: URL
-  try { url = new URL(raw.trim().replace(/^webcals?:\/\//i, 'https://')) } catch { return null }
-  if (url.protocol === 'https:') return url
-  if (url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) return url
-  return null
-}
 
 export function createCalendarLinks(d: {
   file: string
@@ -40,12 +34,15 @@ export function createCalendarLinks(d: {
   const urlOf = (l: Stored) => { try { return d.open(l.url) } catch { return null } }
 
   /** the feed's text: the cached copy for five minutes, a fresh one after, the last good copy when that fails */
-  async function feed(l: Stored): Promise<IcsFeed | null> {
+  async function feed(l: Stored, unavailable?: string[]): Promise<IcsFeed | null> {
     const hit = cache.get(l.id)
     const parsed = (c: { text: string; feed?: IcsFeed }) => (c.feed ??= icsFeed(c.text, { id: l.id, name: l.name }))
     if (hit && now() - hit.at < REFRESH_MS) return parsed(hit)
     const url = urlOf(l)
-    const last = () => (hit ? parsed(hit) : null)
+    const last = () => {
+      unavailable?.push(l.name)
+      return hit ? parsed(hit) : null
+    }
     if (!url) return last()
     try {
       const t = await d.get(url)
@@ -85,12 +82,12 @@ export function createCalendarLinks(d: {
     /** one per link, as calendar.ts's calendars() gives the Mac's */
     async calendars() { return stored().map((l) => ({ id: l.id, name: l.name, source: l.host })) },
     /** every link's events between two times; a link that can't be read gives none, never an error */
-    async events(fromMs: number, toMs: number): Promise<RawEvent[]> {
-      const all = await Promise.all(stored().map(async (l) => {
+    async events(fromMs: number, toMs: number, unavailable?: string[], hidden: string[] = []): Promise<RawEvent[]> {
+      const all = await Promise.all(stored().filter(l => !hidden.includes(l.id)).map(async (l) => {
         try {
-          const f = await feed(l)
+          const f = await feed(l, unavailable)
           return f ? f.events(fromMs, toMs) : []
-        } catch { return [] }
+        } catch { unavailable?.push(l.name); return [] }
       }))
       return all.flat()
     },

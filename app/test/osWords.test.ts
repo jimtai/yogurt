@@ -25,6 +25,7 @@ describe('Mac text', () => {
   // or beside its own Windows and Linux sentence. A new one belongs here only if it is Mac only too.
   const MAC = [
     'Apps on this Mac can read your meetings, notes, transcripts and recordings. If an app uses an online AI, what it reads goes to that AI.',
+    "Calendars from the Mac's Calendar app appear above automatically.",
     'Connect the calendars on this Mac to see your upcoming meetings.',
     'Everything stays on your Mac.',
     'Its notes, transcript and recording are removed from this Mac for good.',
@@ -33,7 +34,6 @@ describe('Mac text', () => {
     'Open Yogurt when your Mac starts',
     'Saved on this Mac',
     'This conversation is removed from this Mac for good. Your meetings stay as they are.',
-    'Try reading the calendars on this Mac again.',
     'Uses the microphone your Mac is set to',
     "Yogurt hears you through your microphone, and everyone else through your Mac's sound.",
     'Yogurt needs a Mac with at least 8 GB of memory.',

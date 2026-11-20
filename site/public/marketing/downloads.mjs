@@ -33,6 +33,43 @@ export function platformFor(userAgent,mobile=false,maxTouchPoints=0){
   if(/Linux/i.test(userAgent)&&!/Android/i.test(userAgent))return 'linux'
   return 'mac'
 }
+// Enrich actual installer links after platform detection and mobile menu creation.
+export function countDownloadClicks(root, analytics) {
+  const regions = [
+    ['.mobile-download-list', 'mobile chooser'], ['.site-header', 'nav'],
+    ['.hero', 'hero'], ['.site-footer', 'footer'], ['.updates-page', 'updates'],
+  ]
+  for (const [platform, installer] of Object.entries(platforms)) {
+    for (const link of root.querySelectorAll(`a[href="${release + installer.file}"]`)) {
+      const region = regions.find(([selector]) => link.closest(selector))
+      if (region) Object.assign(link.dataset, { downloadPlatform: platform, downloadPlacement: region[1] })
+    }
+  }
+
+  try {
+    analytics('beforeSend', event => {
+      if (event.type !== 'event') return event
+      // The provider attaches the page URL and external referrer to custom events.
+      // Its hook can rewrite the former but cannot redact the latter.
+      const url = new URL(event.url)
+      if (root.referrer) {
+        const referrer = new URL(root.referrer)
+        if (referrer.origin !== url.origin && referrer.href !== referrer.origin + '/') return null
+      }
+      return { ...event, url: url.origin + url.pathname }
+    })
+  } catch { return }
+
+  function activated(event) {
+    if (event.type === 'auxclick' && event.button !== 1) return
+    const link = event.target.closest?.('a[data-download-platform][data-download-placement]')
+    if (!link || event.defaultPrevented) return
+    const { downloadPlatform: platform, downloadPlacement: placement } = link.dataset
+    try { analytics('event', { name: 'Download', data: { platform, placement } }) } catch {}
+  }
+  root.addEventListener('click', activated, { passive: true })
+  root.addEventListener('auxclick', activated, { passive: true })
+}
 if(typeof document!=='undefined'){
   const key=platformFor(navigator.userAgent,navigator.userAgentData?.mobile,navigator.maxTouchPoints)
   if(key===null){
@@ -47,6 +84,7 @@ if(typeof document!=='undefined'){
       for(const platform of Object.values(platforms)){
         const link=document.createElement('a'),name=document.createElement('strong'),requirements=document.createElement('span')
         link.href=release+platform.file
+        name.className='link-label'
         name.textContent=platform.name;requirements.textContent=platform.requirements.join(' · ')
         link.append(name,requirements);list.append(link)
       }
@@ -82,4 +120,5 @@ if(typeof document!=='undefined'){
       })
     }
   }
+  countDownloadClicks(document, (...args) => window.va?.(...args))
 }

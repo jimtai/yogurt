@@ -1,6 +1,7 @@
+import { InlineError } from '../components/InlineError'
 import { Folder as FolderIcon } from 'lucide-react'
 import { LoadingContent } from '../components/LoadingContent'
-import { MeetingListLoading } from './Home'
+import { LibraryEmpty, MeetingListLoading } from './Home'
 import { useEffect, useRef, useState } from 'react'
 import { FolderGlyph } from '../components/FolderAppearance'
 import { FolderAppearanceDialog } from '../components/FolderDialogs'
@@ -20,10 +21,8 @@ export function Folder({ folder, open, onStarted }: { folder: FolderRow; open: (
     <div className="native-library" ref={past.setRoot} tabIndex={-1}>
       <div className="folder-page-heading"><button className="folder-heading-icon" data-testid="folder-heading-icon" aria-label={t('Change icon')} title={t('Change icon')} onClick={() => setAppearance(true)} data-folder-color={folder.color}><FolderGlyph appearance={folder} size={24} /></button><FolderTitle folder={folder} /></div>
       {appearance && <FolderAppearanceDialog folder={folder} onDone={() => setAppearance(false)} />}
-      <LoadingContent pending={!past.cards} testId="meetings-loading" skeleton={<MeetingListLoading showFolders={false} />} className="library-load">{!past.cards?.length ? <section data-testid="folder-empty" className="library-empty empty-state"><div className="empty-state-content">
-        <div className="empty-tile"><FolderIcon size={28} strokeWidth={1.5} aria-hidden="true" /></div><h2>{t('No meetings here yet')}</h2>
-        <p>{t('You can record here or add existing meetings to this folder.')}</p>
-      </div></section> : <PastNotes showFolders={false} cards={past.cards ?? []} day={day} more={past.more} sentinel={past.setSentinel} onOpen={open} />}</LoadingContent>
+      {past.failed && !!past.cards?.length && <InlineError testId="meetings-read-error" retry={past.retry} />}
+      <LoadingContent pending={!past.cards && !past.failed} testId="meetings-loading" skeleton={<MeetingListLoading showFolders={false} />} className="library-load">{!past.cards?.length ? <LibraryEmpty testId="folder-empty" icon={<FolderIcon size={28} strokeWidth={1.5} aria-hidden="true" />} title={t('No meetings here yet')} description={t('You can record here or add existing meetings to this folder.')} retry={past.failed ? past.retry : undefined} /> : <PastNotes showFolders={false} cards={past.cards ?? []} day={day} more={past.more} sentinel={past.setSentinel} onOpen={open} />}</LoadingContent>
     </div>
   </div>
 }
@@ -44,5 +43,5 @@ function FolderTitle({ folder }: { folder: FolderRow }) {
   return <h1><input data-testid="folder-title-input" aria-label={t('Folder name')} autoFocus value={draft} maxLength={200}
     onFocus={(e) => e.currentTarget.select()} onChange={(e) => setDraft(e.target.value)} onBlur={done}
     onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); else if (e.key === 'Escape') { cancelled.current = true; e.currentTarget.blur() } }}
-    className="-mx-1 w-full rounded-lg bg-transparent px-1 outline-none ring-1 ring-line focus:ring-accent" /></h1>
+    className="-mx-1 w-full rounded-lg bg-transparent px-1 outline-none ring-1 ring-line focus-visible:ring-accent" /></h1>
 }

@@ -152,6 +152,9 @@ test('the compact calendar keeps its original type and geometry with a bright to
       await expect(page.locator('.agenda-day > span')).toHaveCSS('font-weight', '400')
       const other = week.locator('button:not([aria-current=date])').first()
       await other.focus()
+      await page.keyboard.press('Tab')
+      await page.keyboard.press('Shift+Tab')
+      await expect(other).toBeFocused()
       await page.keyboard.press('Space')
       await expect(other).toHaveAttribute('aria-pressed', 'true')
       await expect(today).toHaveAttribute('aria-pressed', 'false')
@@ -177,5 +180,21 @@ test('the compact calendar keeps its original type and geometry with a bright to
       await expect(today).toHaveAttribute('aria-pressed', 'true')
       await expect(page.locator('.agenda-day h3')).toHaveText('Today')
     }
+  } finally { await app.close() }
+})
+
+test('a narrow agenda can scroll the header and the last event into view', async () => {
+  const app = await electron.launch({ args: [join(import.meta.dirname, '../out/main/index.js')], env: { ...process.env, YOGURT_FAKE: '1', YOGURT_USER_DATA: mkdtempSync(join(tmpdir(), 'yogurt-agenda-width-')) } })
+  try {
+    const page = await app.firstWindow()
+    await seedAgendaAtNoon(app, page)
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2))
+    const agenda = page.getByRole('complementary', { name: 'Agenda' })
+    await expect(agenda).toHaveCSS('overflow-y', 'auto')
+    const event = agenda.getByTestId('event').last()
+    await event.scrollIntoViewIfNeeded()
+    await expect(event).toBeInViewport()
+    await agenda.getByRole('button', { name: 'Today' }).scrollIntoViewIfNeeded()
+    await expect(agenda.getByRole('button', { name: 'Today' })).toBeInViewport()
   } finally { await app.close() }
 })

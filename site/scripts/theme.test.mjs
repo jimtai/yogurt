@@ -1,8 +1,9 @@
+import { homePage } from './site-page.mjs'
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
-const html=readFileSync(new URL('../content/home.html',import.meta.url),'utf8');
+const html=homePage();
 const bootstrap=html.match(/<script>\s*(\(function\(\)[\s\S]*?)<\/script>/)[1];
 const script=readFileSync(new URL('../public/marketing/theme.mjs',import.meta.url),'utf8').replace('export function','function');
 assert.ok(html.indexOf(bootstrap)<html.indexOf('href="/marketing/site.css"'));
@@ -31,7 +32,7 @@ function page(saved,{blocked=false,search='',systemDark=false}={}){
   const root={dataset:{theme:'light'},classList:{add:v=>classes.add(v),remove:v=>classes.delete(v)}};
   const toggle={hidden:true,setAttribute(k,v){this[k]=v},addEventListener(k,fn){this[k]=fn}};
   const meta={content:'#ffffff'};
-  const frames=[false,true].map(hero=>({classList:{contains:()=>hero},contentDocument:{documentElement:{dataset:{},style:{}}}}));
+  const frames=[false,true].map(hero=>({classList:{contains:()=>hero},contentDocument:{documentElement:{dataset:{},style:{}},querySelectorAll:()=>[]}}));
   const storage=new Map(saved===undefined?[]:[['yogurt-theme',saved]]);
   const context=vm.createContext({
     URLSearchParams,location:{search},matchMedia:()=>media,
@@ -60,7 +61,7 @@ for(const systemDark of [false,true])for(const saved of [undefined,'light','dark
     assert.equal(p.toggle['aria-pressed'],String(next==='dark'));
     assert.equal(p.meta.content,next==='dark'?'#1B1B1D':'#ffffff');
     assert.equal(p.frames[0].contentDocument.documentElement.dataset.marketingTheme,next);
-    assert.equal(p.frames[1].contentDocument.documentElement.dataset.marketingTheme,'dark');
+    assert.equal(p.frames[1].contentDocument.documentElement.dataset.marketingTheme,next);
     assert.equal(page(p.storage.get('yogurt-theme')).initial,next);
   }
   // Lazy frames inherit the current choice before their ready handler reveals them.
@@ -111,7 +112,7 @@ function luminance(hex){
 const contrast=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
 const css=readFileSync(new URL('../public/marketing/site.css',import.meta.url),'utf8');
 assert(!/data-hero-edge/.test(css),'no hero edge comparison rules remain');
-assert(css.includes(':root[data-theme=light] .product-stage>.product-window.demo-window{border:1px solid #5A5A5E}'),'light mode gives the demo window a mid-grey border');
+assert.match(css,/:root\[data-theme=light\] \.product-stage>\.product-window\.demo-window\{[^}]*border:1px solid var\(--section-frame-border\)/);
 assert(css.includes(':root[data-theme=dark] .product-stage>.product-window.demo-window::after{'),'dark inner highlight remains the default');
 assert.match(css,/\.marker-track\s*\{\s*stroke:\s*var\(--hairline\)/);
 assert.ok(html.includes('class="nav-stars"') && html.includes('nav-download'));

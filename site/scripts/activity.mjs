@@ -45,20 +45,21 @@ export function historyFromDates(dates) {
     })
   return points
 }
-export async function getActivity(saved, request, now = new Date()) {
-  async function pages(endpoint, accept) {
-    const rows = []
-    for (let page = 1; ; page++) {
-      const batch = await request(api + '/' + endpoint + '?per_page=100&page=' + page, accept)
-      if (!Array.isArray(batch)) throw Error('Incomplete page')
-      rows.push(...batch)
-      if (batch.length < 100) return rows
-    }
+export async function githubPages(request, endpoint, accept) {
+  const rows = []
+  for (let page = 1; ; page++) {
+    const batch = await request(api + '/' + endpoint + '?per_page=100&page=' + page, accept)
+    if (!Array.isArray(batch)) throw Error('Incomplete page')
+    rows.push(...batch)
+    if (batch.length < 100) return rows
   }
+}
+
+export async function getActivity(saved, request, now = new Date(), releaseRows) {
   const repo = await request(api)
   if (!Number.isSafeInteger(repo.stargazers_count) || repo.stargazers_count < 1)
     throw Error('Invalid star count')
-  const releases = (await pages('releases'))
+  const releases = (releaseRows ?? await githubPages(request, 'releases'))
     .filter(stableRelease)
     .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
   if (!releases.length) throw Error('No published releases')
@@ -76,7 +77,7 @@ export async function getActivity(saved, request, now = new Date()) {
     !(now - Date.parse(historyCapturedAt) < day)
   ) {
     try {
-      const stars = await pages('stargazers', 'application/vnd.github.star+json')
+      const stars = await githubPages(request, 'stargazers', 'application/vnd.github.star+json')
       const dates = new Map()
       for (const row of stars) {
         if (!row.user?.id || !timestamp(row.starred_at)) throw Error('Invalid star timestamp')
@@ -102,9 +103,39 @@ export async function getActivity(saved, request, now = new Date()) {
   if (!validSnapshot(snapshot)) throw Error('Invalid activity snapshot')
   return snapshot
 }
-export function renderActivity(html, data) {
+function releaseFields(releases) {
+  const latest = releases[0]
+  const end = Date.parse(latest.published.slice(0, 10))
+  const first = end - 6 * day
+  const counts = Array(7).fill(0)
+  for (const { published } of releases) {
+    const index = (Date.parse(published.slice(0, 10)) - first) / day
+    if (index >= 0 && index < 7) counts[index]++
+  }
+  const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' })
+  const peak = Math.max(1, ...counts)
+  const bars = counts.map((count, i) => {
+    const when = new Date(first + i * day)
+    const label = date.format(when) + ', ' + count + (count === 1 ? ' release' : ' releases')
+    return `<span class="week-day" title="${label}"><i><b style="height:${100 * count / peak}%"></b></i><small>${weekday.format(when)}</small></span>`
+  }).join('')
+  const weekTotal = counts.reduce((sum, count) => sum + count, 0)
+  return {
+    releases: releases.length.toLocaleString('en-US'),
+    releaseNoun: releases.length === 1 ? 'release' : 'releases',
+    weekSummary: `${weekTotal} published ${date.formatRange(first, end)}`,
+    bars,
+    version: latest.version, published: latest.published,
+    releaseDate: new Date(latest.published).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+    }),
+  }
+}
+
+export function renderActivity(html, data, releases) {
   const format = new Intl.NumberFormat('en-US')
-  const { count, week, latest, history } = data
+  const { count, history } = data
   // The total may have refreshed even when dated history was unavailable.
   const last = history.at(-1)
   const observedAt = Date.parse(data.capturedAt)
@@ -116,32 +147,13 @@ export function renderActivity(html, data) {
     const y = 90 - 90 * stars / maximum
     return x.toFixed(2) + ',' + y.toFixed(2)
   })
-  const first = Date.parse(data.capturedAt.slice(0, 10)) - 6 * day
-  const bars = week
-    .map((n, i) => {
-      const label = new Date(first + i * day).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
-      return `<span class="week-day" title="${label} · ${n} releases"><i><b style="height:${
-        (100 * n) / Math.max(1, ...week)
-      }%"></b></i><small>${label}</small></span>`
-    })
-    .join('')
   const values = {
     capturedAt: data.capturedAt,
     stars: format.format(count),
     navStars: navStars(count),
     vertices: vertices.join(' '),
     area: 'M' + vertices.join('L') + (span ? 'L510 90L0 90Z' : 'L510 90Z'),
-    releases: format.format(data.releases),
-    bars,
-    weekTotal: week.reduce((a, b) => a + b, 0),
-    version: latest.tag,
-    published: latest.published,
-    releaseDate: new Date(latest.published).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    }),
+    ...releaseFields(releases),
     historyLabel: `${format.format(last[1])} dated stars through ${new Date(history.at(-1)[0])
       .toISOString()
       .slice(0, 10)}`,
@@ -152,9 +164,9 @@ export function renderActivity(html, data) {
   })
 }
 
-export async function refreshActivity(saved, request, now) {
+export async function refreshActivity(saved, request, now, releaseRows) {
   try {
-    return await getActivity(saved, request, now)
+    return await getActivity(saved, request, now, releaseRows)
   } catch (error) {
     if (!validSnapshot(saved)) throw error
     console.warn('Using saved project activity from ' + saved.capturedAt + ' (' + error.message + ').')

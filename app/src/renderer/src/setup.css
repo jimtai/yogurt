@@ -47,9 +47,11 @@
 .settings-backup { padding:20px; }
 .settings-backup>.settings-description { margin:0; }
 .settings-backup-actions { display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px; }
+.settings-about-actions { justify-content:space-between; }
+.settings-about-actions .workspace-button { font-size:13px; }
 .settings-backup-status { display:flex;flex-wrap:wrap;align-items:center;gap:5px 10px;margin-top:12px;font-size:12px;line-height:18px; }
 .settings-jargon-field { position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:34px;margin-top:11px;padding:4px 5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:text;transition:border-color var(--dur-micro) ease,box-shadow var(--dur-micro) ease; }
-.settings-jargon-field:focus-within { border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft); }
+.settings-jargon-field:has([data-focus-ring]) { border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft); }
 .settings-jargon-input { flex:1;min-width:150px;height:24px;padding-inline:5px;background:transparent;color:var(--ink);font-size:13px;outline:none; }
 .settings-jargon-input:focus-visible { outline:none; }
 .settings-jargon-input::placeholder { color:var(--muted); }
@@ -69,24 +71,17 @@
 .setup-status { display:flex;align-items:center;justify-content:center;gap:6px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:11px;line-height:17px;text-align:center; }
 .setup-status svg { flex:none; }
 
-.call-prompt { display:flex;flex-direction:column;justify-content:space-between;height:100%;padding:16px 17px;border:1px solid var(--line);border-radius:14px;background:var(--float);color:var(--ink); }
-.call-prompt[data-kind=start] { position:relative;overflow:hidden;flex-direction:row;align-items:center;gap:10px;padding:10px 12px;border-radius:18px; }
-.call-prompt[data-kind=start] .call-prompt-heading { flex:1; }
-.call-prompt[data-kind=start] .call-prompt-actions { flex:none;padding:0; }
-.call-prompt-heading { display:flex;align-items:center;gap:11px;min-width:0; }
-.call-prompt-logo { flex:none;color:var(--accent); }
-.call-prompt-label { font-size:13px;line-height:19px;font-weight:600;letter-spacing:-.1px;color:var(--ink); }
-.call-prompt-title { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;font-size:12px;line-height:18px;font-weight:400;color:var(--muted); }
-.call-prompt-actions { display:flex;align-items:center;justify-content:flex-end;gap:8px;padding-inline-start:39px; }
+.call-prompt { position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;height:100%;padding:10px 12px;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:var(--float);color:var(--ink); }
+.call-prompt-heading { display:flex;align-items:center;flex:1;gap:10px;min-width:0; }
+.call-prompt-label { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:19px;font-weight:600;letter-spacing:-.1px;color:var(--ink); }
+.call-prompt-title { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;font-size:12px;line-height:18px;font-weight:400;color:var(--muted); }
+.call-prompt-actions { display:flex;align-items:center;justify-content:flex-end;flex:none;gap:8px; }
 /* The Dock asset includes its own transparent inset: 38px gives a 32px icon plate. */
 .call-prompt-icon { width:38px;height:38px;margin:-3px;object-fit:contain;flex:none; }
-.call-prompt[data-kind=start] .call-prompt-heading { gap:10px; }
-.call-prompt[data-kind=start] .call-prompt-label { white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.call-prompt[data-kind=start] .call-prompt-title { margin:0; }
 .call-prompt-countdown { position:absolute;inset:0 0 auto;height:2px;background:var(--accent);transform-origin:left;pointer-events:none;animation:call-countdown 12s linear forwards; }
 .call-prompt[data-paused=true] .call-prompt-countdown { animation-play-state:paused; }
 @keyframes call-countdown { to { transform:scaleX(0); } }
-@media (prefers-reduced-motion:reduce) { .call-prompt-countdown { animation-timing-function:steps(12,end); } }
+@media (prefers-reduced-motion:reduce) { .call-prompt-countdown { animation:none;display:none; } }
 .call-prompt button:focus-visible { outline:2px solid var(--focus);outline-offset:2px; }
 
 @container (max-width:600px) {
@@ -138,7 +133,7 @@
 .setup-progress-track { color:var(--line); }
 .settings-calendar-dot { flex:none;width:10px;height:10px;border-radius:50%;background:var(--muted); }
 .settings-calendar-choice { cursor:pointer; }
-/* Disconnect and access close the calendar list as their own module, divided from the calendars above */
+/* Calendar options close the list as their own module, divided from the calendars above */
 .settings-calendar-actions>.settings-row { position:relative; }
 .settings-calendar-actions>.settings-row::before { content:"";position:absolute;inset-block-start:0;inset-inline:20px;height:1px;background:var(--line); }
 .settings-calendar-choice input { width:15px;height:15px;flex:none;accent-color:var(--primary); }
@@ -355,6 +350,12 @@
 @media (prefers-reduced-motion: reduce) { .ob-download-blob .finish-band { animation:none !important; } }
 
 
+@media (max-width: 600px) {
+  .ob { grid-template-columns:minmax(0,1fr); }
+  .ob-stage { display:none; }
+  .ob-actions { flex-wrap:wrap; }
+}
+
 @media (max-width: 880px) {
   .ob-side { padding-inline:32px; }
   .ob-title { font-size:31px; }
@@ -396,15 +397,22 @@
 @media (prefers-reduced-motion:reduce) { .ob-button:active:not(:disabled) { transform:none; } }
 
 /* Calendar link (Windows and Linux): one form, in Settings' calendars and the first run's calendar screen */
-.settings-calendar-link { display:block; }
-.calendar-link-form { display:flex;flex-direction:column;gap:10px;width:100%;max-width:440px;font-size:12px;line-height:18px;color:var(--muted); }
+.settings-calendar-add { position:relative; }
+.settings-calendar-add::before { content:"";position:absolute;inset-block-start:0;inset-inline:20px;height:1px;background:var(--line); }
+.settings-calendar-link { margin:0 20px 20px;padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--card); }
+.settings-calendar-link .calendar-link-form { max-width:none; }
+.calendar-link-form {width:100%;max-width:440px;font-size:12px;line-height:18px;color:var(--muted); }
+.calendar-link-fields { display:flex;flex-direction:column;gap:12px;min-width:0;border:0;padding:0;margin:0; }
 .calendar-link-providers { display:flex;gap:4px; }
 .calendar-link-provider { padding:3px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted);background:transparent; }
 .calendar-link-provider[aria-selected="true"] { border-color:currentColor;color:var(--accent); }
 .calendar-link-steps { margin:0;padding-inline-start:18px;list-style:decimal;display:flex;flex-direction:column;gap:2px; }
 .calendar-link-open { align-self:flex-start; }
-.calendar-link-row { display:flex;gap:6px;width:100%; }
-.calendar-link-input { flex:1;min-width:0;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:transparent;font-size:12px; }
+.calendar-link-field { display:flex;flex-direction:column;gap:6px; }
+.calendar-link-field label { color:var(--ink);font-weight:500; }
+.calendar-link-footer { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px; }
+.calendar-link-settings-actions { display:flex;align-items:center;gap:14px;margin-inline-start:auto; }
+.calendar-link-input { width:100%;min-width:0;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--float);color:var(--ink);font-size:12px; }
 .calendar-link-input:focus-visible { outline:2px solid var(--accent);outline-offset:1px; }
 .calendar-link-error { color:var(--danger, #C4352B); }
 .calendar-link-note { font-size:11px; }
