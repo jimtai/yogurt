@@ -377,13 +377,22 @@ case "calendar-auth":
   out(["status": status()])
 case "calendars":
   needAccess()
-  out(store.calendars(for: .event).map { c in
-    var row = ["id": c.calendarIdentifier, "name": c.title, "source": c.source.title]
+  let calendars: [[String: String]] = store.calendars(for: .event).map { c -> [String: String] in
+    var row: [String: String] = ["id": c.calendarIdentifier, "name": c.title, "source": c.source.title]
     if let color = NSColor(cgColor: c.cgColor)?.usingColorSpace(.sRGB) {
-      row["color"] = String(format: "#%02X%02X%02X", Int((color.redComponent * 255).rounded()), Int((color.greenComponent * 255).rounded()), Int((color.blueComponent * 255).rounded()))
+      let red = Int((color.redComponent * 255).rounded())
+      let green = Int((color.greenComponent * 255).rounded())
+      let blue = Int((color.blueComponent * 255).rounded())
+      row["color"] = String(format: "#%02X%02X%02X", red, green, blue)
     }
     return row
-  }.sorted { ($0["source"]! + $0["name"]!) < ($1["source"]! + $1["name"]!) })
+  }
+  let sortedCalendars = calendars.sorted { a, b in
+    let left = a["source"]! + a["name"]!
+    let right = b["source"]! + b["name"]!
+    return left < right
+  }
+  out(sortedCalendars)
 case "events":
   needAccess()
   guard args.count >= 3 else { fail("events FROM TO") }

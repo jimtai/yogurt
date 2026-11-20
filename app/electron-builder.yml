@@ -42,6 +42,9 @@ extraResources:
 # the app loads only from its own app.asar, checked against the hash in Info.plist.
 # Local debugging can enable the inspector with YOGURT_FUSES=0 in scripts/release-mac.sh.
 electronFuses:
+  # Apple Silicon needs a fresh signature after changing fuses, including builds without a signing certificate.
+  # Release signing replaces this temporary ad-hoc signature afterward.
+  resetAdHocDarwinSignature: true
   runAsNode: false
   enableNodeOptionsEnvironmentVariable: false
   enableNodeCliInspectArguments: false

@@ -5,8 +5,11 @@ import { t } from '../shared/i18n'
 import type { Access } from './permissions'
 import { loadSettings, updateSettings } from './settings'
 
-/** A designated requirement includes the bundle ID and signer, but no install path or build version. */
+/** Certificate signatures identify the bundle and signer; ad-hoc signatures identify this exact build by hash. */
 export function notificationIdentity(output: string): string | null {
+  // codesign prefixes its implicit ad-hoc requirement with "# ". It changes on rebuild, so registration is asked again.
+  const adhoc = output.match(/^#?\s*designated => (cdhash H"[a-fA-F0-9]{40}")\s*$/m)
+  if (adhoc) return `designated => ${adhoc[1]}`
   const requirement = output.match(/^designated => .+$/m)?.[0].trim()
   return requirement && /identifier "[^"]+"/.test(requirement) && /certificate |anchor |cdhash /.test(requirement) ? requirement : null
 }

@@ -37,6 +37,24 @@ it('uses the bundle and signing requirement, excluding the install path', () => 
   expect(notificationIdentity('designated => identifier "so.yogurt.app"')).toBeNull()
 })
 
+it('recognizes an implicit ad-hoc requirement and scopes registration to that build', async () => {
+  const { path, permission } = rig()
+  const hash = 'a'.repeat(40)
+  native.requirement = `# designated => cdhash H"${hash}"\n`
+  const key = `designated => cdhash H"${hash}"`
+  expect(notificationIdentity(native.requirement)).toBe(key)
+  expect(notificationIdentity('designated => cdhash H"invalid"')).toBeNull()
+  expect(await permission.status()).toBe('unknown')
+  const request = permission.request()
+  await vi.waitFor(() => expect(notices).toHaveLength(1))
+  notices[0].emit('show')
+  expect(await request).toBe('asked')
+  expect(loadSettings(path).notificationsAskedFor).toEqual([key])
+  expect(await createNotificationPermission(path).status()).toBe('asked')
+  native.requirement = `# designated => cdhash H"${'b'.repeat(40)}"\n`
+  expect(await createNotificationPermission(path).status()).toBe('unknown')
+})
+
 it('ignores a migrated legacy flag and records only a confirmed post for this identity', async () => {
   const { path, permission } = rig()
   saveSettings(path, { notificationsAsked: true, notificationsAskedFor: [review], myName: 'Test' })
