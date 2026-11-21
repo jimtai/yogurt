@@ -44,8 +44,22 @@ site/.vercel/
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+!.env.sample
 *.p12
+*.pfx
 *.p8
+*.key
+*.pem
+*.keychain
+*.keychain-db
+keychain-password
+# Public test credential supplied by the upstream project, not a personal signing key.
+!app/test/fixtures/tls/server.key
+/.yogurt-dev/
+/Yogurt-dev/
+/Yogurt Build/
 
 # written by next dev
 site/AGENTS.md

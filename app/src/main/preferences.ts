@@ -51,7 +51,15 @@ export function hookPreferences(d: { file: string; permissions: Permissions; ask
   ipcMain.handle('onboarding:restore-nudge', () => { updateSettings(d.file, { setupDismissed: [] }) })
   ipcMain.handle('permissions:relaunch', () => d.relaunch())
   ipcMain.handle('permissions:status', () => d.permissions.status())
-  ipcMain.handle('permissions:request', (_e, k: unknown) => (isKind(k) ? d.permissions.request(k) : 'unknown'))
+  ipcMain.handle('permissions:request', async (_e, k: unknown) => {
+    if (!isKind(k)) return 'unknown'
+    const access = await d.permissions.request(k)
+    // A request can return without a prompt (for example, an old Mac permission entry after changing signer).
+    // Give the person a way forward without claiming permission was granted.
+    if (access === 'unknown') await d.permissions.openSettings(k)
+    for (const window of BrowserWindow.getAllWindows()) window.webContents.send('permissions:changed')
+    return access
+  })
   ipcMain.handle('permissions:open', (_e, k: unknown) => { if (isKind(k)) return d.permissions.openSettings(k) })
   ipcMain.handle('settings:get', () => {
     const s = loadSettings(d.file)

@@ -19,7 +19,11 @@ APP=dist/mac-arm64/Yogurt.app
 set --
 if [ "$LOCAL" = 1 ]; then
   # Pin the exact certificate; never silently fall back to ad-hoc or a different signer.
-  CERT=$(security find-identity -v -p codesigning | awk '/"Yogurt Local"$/ { print $2 }')
+  if [ -n "${CSC_KEYCHAIN:-}" ]; then
+    CERT=$(security find-identity -v -p codesigning "$CSC_KEYCHAIN" | awk '/"Yogurt Local"$/ { print $2 }')
+  else
+    CERT=$(security find-identity -v -p codesigning | awk '/"Yogurt Local"$/ { print $2 }')
+  fi
   [ "${#CERT}" = 40 ] || { echo 'Create exactly one valid Yogurt Local code-signing identity.' >&2; exit 1; }
   LOCAL_DIR=$(mktemp -d "${TMPDIR:-/tmp}/yogurt-local-sign.XXXXXX")
   trap 'rm -rf "$LOCAL_DIR"' EXIT

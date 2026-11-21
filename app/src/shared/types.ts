@@ -256,6 +256,8 @@ export type YogurtApi = {
   permissions: {
     status(): Promise<PermissionStatus>
     request(kind: PermissionKind): Promise<Access>
+    /** A request finished; refresh settings and setup checklists without waiting for a window focus change. */
+    onChange(cb: () => void): () => void
     open(kind: PermissionKind): Promise<void>
     /** quit and open Yogurt again, for a permission the Mac applies only then; false while recording */
     relaunch(): Promise<boolean>

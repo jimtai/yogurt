@@ -1,5 +1,5 @@
 import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -10,6 +10,24 @@ const fake = (app: ElectronApplication, fn: string, arg?: unknown) =>
   app.evaluate((_e, [fn, arg]) => (globalThis as any).__fake__[fn as string](arg), [fn, arg] as const)
 const settingsOf = (dir: string) => JSON.parse(readFileSync(join(dir, 'settings.json'), 'utf8'))
 const firstRun = { YOGURT_FAKE_PERMISSIONS: 'unknown', YOGURT_FAKE_CALENDAR: 'notDetermined' }
+
+test('granting permissions in Settings refreshes the sidebar checklist without refocusing', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'yogurt-e2e-'))
+  writeFileSync(join(dir, 'settings.json'), JSON.stringify({ welcomed: true }))
+  const app = await launch(dir, firstRun)
+  try {
+    const page = await app.firstWindow()
+    await expect(page.getByTestId('home')).toBeVisible()
+    await expect(page.getByTestId('finish-setup-remaining')).toHaveText('4 left')
+    await page.getByTestId('settings-open').click()
+    for (const [kind, left] of [['mic', 3], ['systemAudio', 2], ['notifications', 1]] as const) {
+      const row = page.locator(`[data-testid="permission-row"][data-kind="${kind}"]`)
+      await row.getByTestId('permission-ask').click()
+      await expect(row).toHaveAttribute('data-status', 'granted')
+      await expect(page.getByTestId('finish-setup-remaining')).toHaveText(`${left} left`)
+    }
+  } finally { await app.close() }
+})
 
 test('first run asks one thing at a time, then home; the next launch asks nothing', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'yogurt-e2e-'))

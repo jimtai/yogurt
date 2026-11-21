@@ -205,6 +205,7 @@ const api: YogurtApi = {
   permissions: {
     status: () => ipcRenderer.invoke('permissions:status'),
     request: (k) => ipcRenderer.invoke('permissions:request', k),
+    onChange: (cb) => { ipcRenderer.on('permissions:changed', cb); return () => { ipcRenderer.off('permissions:changed', cb) } },
     open: (k) => ipcRenderer.invoke('permissions:open', k),
     relaunch: () => ipcRenderer.invoke('permissions:relaunch'),
   },

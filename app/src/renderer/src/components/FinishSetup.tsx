@@ -39,8 +39,9 @@ export function FinishSetup({ collapsed = false }: { collapsed?: boolean }) {
   }, [])
   useEffect(() => {
     reload()
+    const off = window.yogurt.permissions.onChange(reload)
     window.addEventListener('focus', reload)
-    return () => { ++readRevision.current; window.removeEventListener('focus', reload) }
+    return () => { ++readRevision.current; off(); window.removeEventListener('focus', reload) }
   }, [reload])
   const close = useCallback(() => { panel.current?.close(); setOpen(false); trigger.current?.focus({ preventScroll: true }) }, [])
   const hide = async () => {

@@ -72,8 +72,9 @@ export function Settings({ revision = 0, focus }: { revision?: number; focus?: s
     reload()
     void window.yogurt.settings.get().then((p) => { setPrefs(p); setName(p.myName) })
     // back from System Settings: show what changed there
+    const off = window.yogurt.permissions.onChange(reload)
     window.addEventListener('focus', reload)
-    return () => window.removeEventListener('focus', reload)
+    return () => { off(); window.removeEventListener('focus', reload) }
   }, [reload])
   const refreshGeneral = useCallback(() => {
     void window.yogurt.settings.get().then(p => { setPrefs(p); setName(p.myName) })

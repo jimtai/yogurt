@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "node scripts/native.mjs && electron-vite build",
+    "build:mac:local": "node scripts/build-local-mac.mjs",
     "test": "vitest run",
     "e2e": "node scripts/native.mjs && electron-vite build && playwright test",
     "native": "node scripts/native.mjs",
